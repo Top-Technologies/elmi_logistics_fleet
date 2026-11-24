@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Top Level App Menu -->
+    <menuitem id="menu_top_logistics_root"
+              name="Elmi Logistics"
+              sequence="35"
+              web_icon="elmi_logistics_fleet,static/description/icon.png"
+              groups="elmi_logistics_fleet.group_transport_request_user"/>
+
+    <!-- 0. Live Management Dashboard (Section 38 & 39) -->
+    <menuitem id="menu_top_logistics_dashboard"
+              name="Dashboard"
+              parent="menu_top_logistics_root"
+              action="action_top_logistics_dashboard_client"
+              sequence="5"
+              groups="elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager,elmi_logistics_fleet.group_logistics_management"/>
+
+    <!-- 0.1 Secondary Vehicle Analytics Dashboard -->
+    <menuitem id="menu_top_vehicle_dashboard"
+              name="Vehicle Dashboard"
+              parent="menu_top_logistics_root"
+              action="action_top_vehicle_dashboard_client"
+              sequence="6"
+              groups="elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager,elmi_logistics_fleet.group_logistics_management"/>
+
+    <!-- 1. Transport Requests Menu Header -->
+    <menuitem id="menu_transport_request_parent"
+              name="Transport Requests"
+              parent="menu_top_logistics_root"
+              sequence="10"/>
+
+    <menuitem id="menu_transport_request_all"
+              name="All Requests"
+              parent="menu_transport_request_parent"
+              action="action_top_transport_request_all"
+              sequence="10"/>
+
+    <menuitem id="menu_transport_request_my"
+              name="My Requests"
+              parent="menu_transport_request_parent"
+              action="action_top_transport_request_my"
+              sequence="20"/>
+
+    <menuitem id="menu_transport_request_to_approve"
+              name="To Approve"
+              parent="menu_transport_request_parent"
+              action="action_top_transport_request_to_approve"
+              sequence="30"
+              groups="elmi_logistics_fleet.group_fleet_supervisor,elmi_logistics_fleet.group_department_approver,elmi_logistics_fleet.group_fleet_manager"/>
+
+    <menuitem id="menu_transport_request_allocation"
+              name="Vehicle Allocation"
+              parent="menu_transport_request_parent"
+              action="action_top_transport_request_allocation"
+              sequence="40"
+              groups="elmi_logistics_fleet.group_fleet_supervisor,elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager"/>
+
+    <menuitem id="menu_top_machinery_deployment_order_request"
+              name="Machinery Deployments (MDO)"
+              parent="menu_transport_request_parent"
+              action="action_top_machinery_deployment_order"
+              sequence="50"/>
+
+    <!-- 2. Trips & Dispatch Header (Sections 14, 17, 34, 37) -->
+    <menuitem id="menu_top_fleet_trip_parent"
+              name="Trips &amp; Dispatch"
+              parent="menu_top_logistics_root"
+              sequence="20"
+              groups="elmi_logistics_fleet.group_fleet_supervisor,elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager,elmi_logistics_fleet.group_logistics_management"/>
+
+    <menuitem id="menu_top_fleet_trip_all"
+              name="Transport Work Orders (TWO)"
+              parent="menu_top_fleet_trip_parent"
+              action="action_top_fleet_trip_all"
+              sequence="10"/>
+
+    <menuitem id="menu_top_machinery_deployment_order"
+              name="Machinery Deployments (MDO)"
+              parent="menu_top_fleet_trip_parent"
+              action="action_top_machinery_deployment_order"
+              sequence="15"/>
+
+    <menuitem id="menu_fleet_meter_reading"
+              name="Dual Meter Readings (Hours &amp; KM)"
+              parent="menu_top_fleet_trip_parent"
+              action="action_fleet_meter_reading"
+              sequence="18"/>
+
+    <menuitem id="menu_top_site_log_import_wizard"
+              name="Import Weekly Site Logs"
+              parent="menu_top_fleet_trip_parent"
+              action="action_top_site_log_import_wizard"
+              sequence="19"/>
+
+    <menuitem id="menu_top_fleet_trip_active"
+              name="Active Trips"
+              parent="menu_top_fleet_trip_parent"
+              action="action_top_fleet_trip_active"
+              sequence="20"/>
+
+    <menuitem id="menu_top_vehicle_availability_calendar_menu"
+              name="Availability Calendar"
+              parent="menu_top_fleet_trip_parent"
+              action="action_top_vehicle_availability_calendar"
+              sequence="25"/>
+
+    <menuitem id="menu_top_fleet_trip_completed"
+              name="Completed Trips"
+              parent="menu_top_fleet_trip_parent"
+              action="action_top_fleet_trip_completed"
+              sequence="30"/>
+
+    <menuitem id="menu_top_fleet_accident"
+              name="Accidents &amp; Incidents"
+              parent="menu_top_fleet_trip_parent"
+              action="action_top_fleet_accident"
+              sequence="40"/>
+
+    <!-- 2.5 Vehicle Inspections Main Menu -->
+    <menuitem id="menu_top_fleet_vehicle_inspection"
+              name="Vehicle Inspections"
+              parent="menu_top_logistics_root"
+              action="action_top_fleet_vehicle_inspection"
+              sequence="22"
+              groups="elmi_logistics_fleet.group_fleet_supervisor,elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager"/>
+
+    <!-- 3. Reporting Menu Header (Fleet Activity, Sub-Trips, Fuel & Costs) -->
+    <menuitem id="menu_top_fleet_reporting_root"
+              name="Reporting"
+              parent="menu_top_logistics_root"
+              sequence="80"
+              groups="elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager,elmi_logistics_fleet.group_logistics_management,elmi_logistics_fleet.group_logistics_finance"/>
+
+    <menuitem id="menu_top_fleet_activity_report"
+              name="Fleet Activity &amp; Sub-Trips"
+              parent="menu_top_fleet_reporting_root"
+              action="action_top_fleet_activity_report_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_top_fleet_trips_analysis"
+              name="Trip &amp; Leg Activity Analysis"
+              parent="menu_top_fleet_reporting_root"
+              action="action_top_fleet_trips_analysis"
+              sequence="20"/>
+
+    <menuitem id="menu_top_fleet_sub_trips_analysis"
+              name="Sub-Trips &amp; Waypoints"
+              parent="menu_top_fleet_reporting_root"
+              action="action_top_fleet_sub_trips_analysis"
+              sequence="30"/>
+
+    <!-- Fuel & Costing Submenus under Reporting -->
+    <menuitem id="menu_top_fleet_fuel_parent"
+              name="Fuel &amp; Costs"
+              parent="menu_top_fleet_reporting_root"
+              sequence="40"
+              groups="elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_logistics_finance,elmi_logistics_fleet.group_fleet_manager"/>
+
+    <menuitem id="menu_top_fuel_consumption_report"
+              name="Fuel Consumption &amp; Efficiency Report"
+              parent="menu_top_fleet_fuel_parent"
+              action="action_top_fuel_consumption_report_wizard"
+              sequence="5"/>
+
+    <menuitem id="menu_top_fleet_fuel_analysis"
+              name="Fuel Analytics &amp; Efficiency"
+              parent="menu_top_fleet_fuel_parent"
+              action="action_top_fleet_fuel_analysis"
+              sequence="10"/>
+
+    <menuitem id="menu_top_fleet_fuel_efficiency"
+              name="Trip Fuel Audit"
+              parent="menu_top_fleet_fuel_parent"
+              action="action_top_fleet_fuel_efficiency"
+              sequence="20"/>
+
+    <menuitem id="menu_top_fleet_fuel_log"
+              name="Manual Fuel Receipts"
+              parent="menu_top_fleet_fuel_parent"
+              action="action_top_fleet_fuel_log"
+              sequence="25"/>
+
+    <!-- 6. Configuration Menu Header -->
+    <menuitem id="menu_top_logistics_config_parent"
+              name="Configuration"
+              parent="menu_top_logistics_root"
+              sequence="90"
+              groups="elmi_logistics_fleet.group_fleet_manager,elmi_logistics_fleet.group_logistics_admin"/>
+
+    <menuitem id="menu_top_fleet_alert_config"
+              name="Safety &amp; Alert Parameters"
+              parent="menu_top_logistics_config_parent"
+              action="action_top_fleet_alert_config"
+              sequence="8"/>
+
+    <menuitem id="menu_top_transport_request_type"
+              name="Request Types"
+              parent="menu_top_logistics_config_parent"
+              action="action_top_transport_request_type"
+              sequence="10"/>
+
+    <menuitem id="menu_top_fleet_trip_type"
+              name="Trip Types"
+              parent="menu_top_logistics_config_parent"
+              action="action_top_fleet_trip_type"
+              sequence="20"/>
+
+    <menuitem id="menu_top_logistics_location"
+              name="Predefined Locations"
+              parent="menu_top_logistics_config_parent"
+              action="action_top_logistics_location"
+              sequence="30"/>
+</odoo>

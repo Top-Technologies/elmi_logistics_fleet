@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Fleet Activity Report Action -->
+    <record id="action_report_fleet_activity" model="ir.actions.report">
+        <field name="name">Fleet Activity &amp; Sub-Trips Report</field>
+        <field name="model">top.fleet.trip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">elmi_logistics_fleet.report_fleet_activity_template</field>
+        <field name="report_file">elmi_logistics_fleet.report_fleet_activity_template</field>
+        <field name="print_report_name">'Fleet_Activity_%s' % (object.name.replace('/', '_'))</field>
+        <field name="binding_model_id" ref="model_top_fleet_trip"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Report Template -->
+    <template id="report_fleet_activity_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #2C3E50;">
+                        <t t-set="legs" t-value="doc.get_sub_trips_details()"/>
+                        <t t-set="fuel" t-value="doc.get_fuel_summary()"/>
+
+                        <!-- Header Banner -->
+                        <div style="border-bottom: 3px solid #1A5276; padding-bottom: 10px; margin-bottom: 16px;">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <h2 style="font-weight: 800; color: #1A5276; margin: 0; text-transform: uppercase; font-size: 20px; letter-spacing: 0.5px;">
+                                        Fleet Activity &amp; Sub-Trips Report
+                                    </h2>
+                                    <div style="font-size: 13px; color: #5D6D7E; margin-top: 4px;">
+                                        <strong>Trip Reference: </strong><span t-field="doc.name" style="font-weight: bold; color: #2C3E50;"/>
+                                        <span class="badge text-bg-primary ms-2" style="font-size: 11px; text-transform: uppercase;" t-field="doc.state"/>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-end" style="font-size: 10.5px; color: #7F8C8D;">
+                                    <div><strong>Generated: </strong><span t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')"/></div>
+                                    <div><strong>Vehicle: </strong><span t-field="doc.vehicle_id.name"/> (<span t-field="doc.vehicle_id.license_plate"/>)</div>
+                                    <div><strong>Driver: </strong><span t-field="doc.driver_id.name"/></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Full Route Headline -->
+                        <div style="background-color: #EBF5FB; border-left: 4px solid #2980B9; padding: 8px 12px; margin-bottom: 14px; border-radius: 3px;">
+                            <strong style="color: #1A5276; font-size: 11.5px;">FULL JOURNEY ROUTE:</strong>
+                            <div style="font-size: 12px; font-weight: 600; color: #2874A6; margin-top: 2px;">
+                                <span t-esc="doc.sub_trips_route_display or (doc.origin + ' ➔ ' + doc.destination)"/>
+                            </div>
+                        </div>
+
+                        <!-- KPI Highlights Bar -->
+                        <div class="row g-2 mb-3 text-center">
+                            <div class="col-3">
+                                <div style="background-color: #F8F9F9; border: 1px solid #D5D8DC; border-radius: 4px; padding: 8px;">
+                                    <div style="font-size: 10px; color: #7F8C8D; text-transform: uppercase;">Sub-Trips / Legs</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #1B4F72;">
+                                        <span t-esc="len(legs)"/> Legs
+                                    </div>
+                                    <div style="font-size: 9.5px; color: #566573;"><span t-esc="doc.total_stops_count"/> Intermediate Stops</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div style="background-color: #F8F9F9; border: 1px solid #D5D8DC; border-radius: 4px; padding: 8px;">
+                                    <div style="font-size: 10px; color: #7F8C8D; text-transform: uppercase;">Total Distance</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #117864;">
+                                        <span t-esc="fuel['total_distance']"/> km
+                                    </div>
+                                    <div style="font-size: 9.5px; color: #566573;">Odo: <span t-esc="fuel['start_odometer']"/> ➔ <span t-esc="fuel['end_odometer']"/></div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div style="background-color: #F8F9F9; border: 1px solid #D5D8DC; border-radius: 4px; padding: 8px;">
+                                    <div style="font-size: 10px; color: #7F8C8D; text-transform: uppercase;">Total Travel Duration</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #7D6608;">
+                                        <span t-esc="doc.actual_duration_display or '0h 0m'"/>
+                                    </div>
+                                    <div style="font-size: 9.5px; color: #566573;"><span t-esc="doc.actual_duration"/> Total Hours</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div style="background-color: #F8F9F9; border: 1px solid #D5D8DC; border-radius: 4px; padding: 8px;">
+                                    <div style="font-size: 10px; color: #7F8C8D; text-transform: uppercase;">Net Fuel Consumed</div>
+                                    <div style="font-size: 16px; font-weight: bold; color: #922B21;">
+                                        <span t-esc="fuel['net_fuel_consumed']"/> L
+                                    </div>
+                                    <div style="font-size: 9.5px; color: #566573;">Rate: <span t-esc="fuel['fuel_rate_l100km']"/> L/100km (<span t-esc="fuel['fuel_economy_kml']"/> km/L)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 1: POINT-TO-POINT SUB-TRIPS BREAKDOWN -->
+                        <div style="margin-bottom: 18px;">
+                            <h4 style="font-size: 12.5px; font-weight: bold; color: #1B4F72; border-bottom: 1.5px solid #AED6F1; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase;">
+                                1. Point-to-Point Sub-Trips &amp; Leg Travel Time Analysis
+                            </h4>
+                            <table class="table table-sm table-bordered" style="width: 100%; font-size: 10px; vertical-align: middle;">
+                                <thead>
+                                    <tr style="background-color: #EBF5FB; color: #1B4F72; text-align: center;">
+                                        <th style="width: 5%;">Leg #</th>
+                                        <th style="width: 25%;">From Point ➔ To Destination</th>
+                                        <th style="width: 13%;">Departure Time</th>
+                                        <th style="width: 13%;">Arrival Time</th>
+                                        <th style="width: 11%;">Time Taken</th>
+                                        <th style="width: 9%;">Dwell Time</th>
+                                        <th style="width: 12%;">Stop Purpose</th>
+                                        <th style="width: 12%;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="legs" t-as="leg">
+                                        <tr>
+                                            <td style="text-align: center; font-weight: bold; background-color: #F8F9F9;">
+                                                <span t-esc="leg['leg_number']"/>
+                                            </td>
+                                            <td>
+                                                <div style="font-weight: 600; color: #2C3E50;">
+                                                    <span t-esc="leg['from_location']"/> ➔ <span t-esc="leg['to_location']"/>
+                                                </div>
+                                                <t t-if="leg['notes']">
+                                                    <div style="font-size: 9px; color: #7F8C8D;"><span t-esc="leg['notes']"/></div>
+                                                </t>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <span t-if="leg['departure_time']" t-esc="context_timestamp(leg['departure_time']).strftime('%d-%b %H:%M')"/>
+                                                <span t-else="" style="color: #BDC3C7;">-</span>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <span t-if="leg['arrival_time']" t-esc="context_timestamp(leg['arrival_time']).strftime('%d-%b %H:%M')"/>
+                                                <span t-else="" style="color: #BDC3C7;">-</span>
+                                            </td>
+                                            <td style="text-align: center; font-weight: bold; color: #2471A3; background-color: #F4F6F6;">
+                                                <span t-esc="leg['travel_time_display']"/>
+                                                <div style="font-size: 8.5px; font-weight: normal; color: #7F8C8D;">(<span t-esc="leg['travel_time_hours']"/> hrs)</div>
+                                            </td>
+                                            <td style="text-align: center; color: #7D6608;">
+                                                <span t-esc="leg['dwell_time_display']"/>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <span class="badge text-bg-light border" t-esc="leg['stop_type_label']"/>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <span class="badge text-bg-info text-capitalize" t-esc="leg['status']"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- SECTION 2: FUEL CONSUMPTION FROM FIRST TO FINAL -->
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="font-size: 12.5px; font-weight: bold; color: #1B4F72; border-bottom: 1.5px solid #AED6F1; padding-bottom: 4px; margin-bottom: 8px; text-transform: uppercase;">
+                                2. First-to-Final Fuel Consumption Audit
+                            </h4>
+                            
+                            <t t-if="fuel['theft_suspected']">
+                                <div style="background-color: #FDEDEC; border-left: 4px solid #E74C3C; padding: 8px 12px; margin-bottom: 10px; border-radius: 3px;">
+                                    <strong style="color: #C0392B;"><i class="fa fa-exclamation-triangle"/> AUDIT ALERT:</strong>
+                                    <span style="color: #78281F;"> Potential abnormal fuel loss or siphoning detected. Actual consumption significantly exceeds the vehicle benchmark norm.</span>
+                                </div>
+                            </t>
+
+                            <table class="table table-sm table-bordered" style="width: 100%; font-size: 10.5px; vertical-align: middle;">
+                                <thead style="background-color: #EAECEE; color: #2C3E50; text-align: center;">
+                                    <tr>
+                                        <th>Starting Fuel (L)</th>
+                                        <th>Refueled En Route (L)</th>
+                                        <th>Gross Fuel (L)</th>
+                                        <th>Ending / Return Fuel (L)</th>
+                                        <th style="background-color: #D4EFDF; color: #196F3D;">Net Consumed (L)</th>
+                                        <th>Distance (km)</th>
+                                        <th>Rate (L/100km)</th>
+                                        <th>Economy (km/L)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="text-align: center; font-size: 11px;">
+                                        <td><strong><span t-esc="fuel['start_fuel']"/> L</strong></td>
+                                        <td style="color: #27AE60;">+ <span t-esc="fuel['total_refueled']"/> L</td>
+                                        <td><strong><span t-esc="fuel['gross_fuel']"/> L</strong></td>
+                                        <td style="color: #C0392B;">- <span t-esc="fuel['end_fuel']"/> L</td>
+                                        <td style="background-color: #EAFAF1; font-weight: bold; color: #1E8449; font-size: 12px;">
+                                            <span t-esc="fuel['net_fuel_consumed']"/> L
+                                        </td>
+                                        <td><span t-esc="fuel['total_distance']"/> km</td>
+                                        <td style="font-weight: bold;"><span t-esc="fuel['fuel_rate_l100km']"/></td>
+                                        <td style="font-weight: bold; color: #2E86C1;"><span t-esc="fuel['fuel_economy_kml']"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- Fuel Reconciliation Metrics Summary -->
+                            <div class="row g-2 mt-1">
+                                <div class="col-4">
+                                    <div style="background-color: #F8F9F9; border: 1px solid #E5E7E9; padding: 6px 10px; border-radius: 3px;">
+                                        <strong>Expected Consumption: </strong><span t-esc="fuel['expected_fuel']"/> L
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="background-color: #F8F9F9; border: 1px solid #E5E7E9; padding: 6px 10px; border-radius: 3px;">
+                                        <strong>Consumption Variance: </strong>
+                                        <span t-if="fuel['variance_fuel'] &gt; 0" style="color: #C0392B; font-weight: bold;">+<span t-esc="fuel['variance_fuel']"/> L (Over)</span>
+                                        <span t-elif="fuel['variance_fuel'] &lt; 0" style="color: #27AE60; font-weight: bold;"><span t-esc="fuel['variance_fuel']"/> L (Saved)</span>
+                                        <span t-else="">0.0 L (Exact)</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="background-color: #F8F9F9; border: 1px solid #E5E7E9; padding: 6px 10px; border-radius: 3px;">
+                                        <strong>Measurement Method: </strong><span t-esc="fuel['method']"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 3: SIGN-OFF & AUDIT VERIFICATION -->
+                        <div style="margin-top: 30px; page-break-inside: avoid;">
+                            <div class="row text-center" style="font-size: 10px; color: #566573;">
+                                <div class="col-4">
+                                    <div style="border-top: 1px solid #BDC3C7; padding-top: 5px; margin: 0 15px;">
+                                        <strong>Fleet Dispatcher / Officer</strong><br/>
+                                        <span>Signature &amp; Date</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="border-top: 1px solid #BDC3C7; padding-top: 5px; margin: 0 15px;">
+                                        <strong>Assigned Driver</strong><br/>
+                                        <span t-field="doc.driver_id.name"/><br/>
+                                        <span>Signature &amp; Date</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="border-top: 1px solid #BDC3C7; padding-top: 5px; margin: 0 15px;">
+                                        <strong>Operations Manager</strong><br/>
+                                        <span>Approval Signature &amp; Date</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

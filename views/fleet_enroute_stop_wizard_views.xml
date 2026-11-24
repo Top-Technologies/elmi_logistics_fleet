@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_top_fleet_enroute_stop_wizard_form" model="ir.ui.view">
+        <field name="name">top.fleet.enroute.stop.wizard.form</field>
+        <field name="model">top.fleet.enroute.stop.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add En-Route Stop &amp; Update Route">
+                <div class="alert alert-info py-2 mb-3" role="alert">
+                    <strong>En-Route Stop Addition:</strong> Adding an intermediate stop to a dispatched vehicle will recalculate the route distance and automatically update the linked Transport Request with the additional distance difference.
+                </div>
+                <group>
+                    <group string="Stop Details">
+                        <field name="trip_id" readonly="1"/>
+                        <field name="request_id" readonly="1" invisible="not request_id"/>
+                        <field name="location_id" options="{'no_create_edit': False}" placeholder="Select Predefined Location (optional)..."/>
+                        <field name="location_name" placeholder="e.g. Adama Branch, Farm Gate 2, Fuel Depot..."/>
+                        <field name="stop_type" widget="badge"/>
+                        <field name="estimated_arrival"/>
+                    </group>
+                    <group string="Impact on Route Distance">
+                        <field name="current_planned_distance"/>
+                        <field name="projected_new_distance" class="fw-bold text-primary"/>
+                        <field name="distance_difference" class="fw-bold text-success" invisible="distance_difference == 0"/>
+                        <field name="cargo_or_passenger_notes" placeholder="e.g. Pick up 2 crates, Drop off inspector..."/>
+                        <field name="notes" placeholder="Reason for adding stop while in transit..."/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_add_stop" string="Add Stop &amp; Update Route" type="object" class="btn-primary" icon="fa-plus-circle"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_top_fleet_enroute_stop_wizard" model="ir.actions.act_window">
+        <field name="name">Add En-Route Intermediate Stop</field>
+        <field name="res_model">top.fleet.enroute.stop.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

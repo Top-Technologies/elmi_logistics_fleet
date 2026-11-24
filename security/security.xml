@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Module Category -->
+        <record model="ir.module.category" id="module_category_logistics">
+            <field name="name">Elmi Logistics</field>
+            <field name="description">Manage Transport Requests, Fleet Dispatching, and Trips.</field>
+            <field name="sequence">25</field>
+        </record>
+
+        <!-- Module Privilege (Odoo 19) -->
+        <record model="res.groups.privilege" id="res_groups_privilege_logistics">
+            <field name="name">Elmi Logistics</field>
+            <field name="sequence">25</field>
+            <field name="category_id" ref="module_category_logistics"/>
+        </record>
+
+        <!-- User Roles based on Specification Section 49 -->
+        <!-- 1. Transport Request User -->
+        <record id="group_transport_request_user" model="res.groups">
+            <field name="name">Transport Request User</field>
+            <field name="sequence">10</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Can create and monitor their own transport requests.</field>
+        </record>
+
+        <!-- 2. Department Approver -->
+        <record id="group_department_approver" model="res.groups">
+            <field name="name">Department Approver</field>
+            <field name="sequence">20</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_request_user'))]"/>
+            <field name="comment">Can review and approve/reject transport requests for their department.</field>
+        </record>
+
+        <!-- 3. Fleet Officer -->
+        <record id="group_fleet_officer" model="res.groups">
+            <field name="name">Fleet Officer</field>
+            <field name="sequence">30</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_request_user')), (4, ref('fleet.fleet_group_user'))]"/>
+            <field name="comment">Can assign vehicles, drivers, dispatch, and manage trips.</field>
+        </record>
+
+        <!-- 3.1 Fleet Supervisor -->
+        <record id="group_fleet_supervisor" model="res.groups">
+            <field name="name">Fleet Supervisor</field>
+            <field name="sequence">40</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_fleet_officer')), (4, ref('group_department_approver'))]"/>
+            <field name="comment">Supervises fleet operations, reviews and approves transport orders, and monitors fleet assignments.</field>
+        </record>
+
+        <!-- 4. Fleet Manager -->
+        <record id="group_fleet_manager" model="res.groups">
+            <field name="name">Fleet Manager</field>
+            <field name="sequence">50</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_fleet_supervisor')), (4, ref('fleet.fleet_group_manager'))]"/>
+            <field name="comment">Full fleet operations, emergency overrides, and report access.</field>
+        </record>
+
+        <!-- 5. GPS Operator -->
+        <record id="group_gps_operator" model="res.groups">
+            <field name="name">GPS Operator</field>
+            <field name="sequence">60</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">GPS monitoring, device management, and GPS troubleshooting.</field>
+        </record>
+
+        <!-- 6. Logistics Finance -->
+        <record id="group_logistics_finance" model="res.groups">
+            <field name="name">Logistics Finance</field>
+            <field name="sequence">70</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_request_user'))]"/>
+            <field name="comment">View fuel, costs, expenses, and trip reconciliation.</field>
+        </record>
+
+        <!-- 7. Logistics Management -->
+        <record id="group_logistics_management" model="res.groups">
+            <field name="name">Management</field>
+            <field name="sequence">80</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_request_user'))]"/>
+            <field name="comment">Executive dashboard, utilization reports, and operational visibility.</field>
+        </record>
+
+        <!-- 8. Administrator -->
+        <record id="group_logistics_admin" model="res.groups">
+            <field name="name">Administrator</field>
+            <field name="sequence">90</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_fleet_manager')), (4, ref('base.group_system'))]"/>
+            <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+            <field name="comment">Full configuration and administrative rights over logistics.</field>
+        </record>
+
+        <!-- Elmi Olindo Blueprint Specialized Roles -->
+        <record id="group_fleet_online_requester" model="res.groups">
+            <field name="name">Fleet Online Requester</field>
+            <field name="sequence">11</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_request_user'))]"/>
+            <field name="comment">Create and submit online requests (OR_ prefix).</field>
+        </record>
+
+        <record id="group_requisition_coordinator" model="res.groups">
+            <field name="name">Requisition Coordinator (Offline)</field>
+            <field name="sequence">12</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_request_user'))]"/>
+            <field name="comment">Enter emailed offline requests from sites (RC_ prefix).</field>
+        </record>
+
+        <record id="group_heavy_dispatcher" model="res.groups">
+            <field name="name">Heavy Fleet Dispatcher</field>
+            <field name="sequence">31</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_fleet_officer'))]"/>
+        </record>
+
+        <record id="group_light_dispatcher" model="res.groups">
+            <field name="name">Light Fleet Dispatcher</field>
+            <field name="sequence">32</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_fleet_officer'))]"/>
+        </record>
+
+        <record id="group_heavy_fleet_manager" model="res.groups">
+            <field name="name">Heavy Fleet Manager</field>
+            <field name="sequence">51</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_fleet_manager'))]"/>
+        </record>
+
+        <record id="group_light_fleet_manager" model="res.groups">
+            <field name="name">Light Fleet Manager</field>
+            <field name="sequence">52</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_fleet_manager'))]"/>
+        </record>
+
+        <record id="group_logistics_ops_lead" model="res.groups">
+            <field name="name">Logistics Operations Lead</field>
+            <field name="sequence">75</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_fleet_manager'))]"/>
+        </record>
+
+        <record id="group_project_followup_engineer" model="res.groups">
+            <field name="name">Project Follow-up Engineer</field>
+            <field name="sequence">21</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_department_approver'))]"/>
+        </record>
+
+        <record id="group_fuel_logistics_officer" model="res.groups">
+            <field name="name">Fuel Logistics Officer</field>
+            <field name="sequence">35</field>
+            <field name="privilege_id" ref="res_groups_privilege_logistics"/>
+            <field name="implied_ids" eval="[(4, ref('group_transport_request_user'))]"/>
+        </record>
+    </data>
+
+    <!-- Record Rules -->
+    <data noupdate="1">
+        <!-- Multi-Company Rule -->
+        <record id="rule_transport_request_multicompany" model="ir.rule">
+            <field name="name">Transport Request Multi-Company</field>
+            <field name="model_id" ref="model_top_transport_request"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- Transport Request User: Can only read/edit their own requests -->
+        <record id="rule_transport_request_user_own" model="ir.rule">
+            <field name="name">Transport Request User: Own Requests</field>
+            <field name="model_id" ref="model_top_transport_request"/>
+            <field name="domain_force">['|', ('requester_id', '=', user.id), ('create_uid', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_transport_request_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Department Approver: Can view all requests in their company -->
+        <record id="rule_transport_request_approver_all" model="ir.rule">
+            <field name="name">Transport Request Approver: Company Requests</field>
+            <field name="model_id" ref="model_top_transport_request"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="groups" eval="[(4, ref('group_department_approver')), (4, ref('group_fleet_officer')), (4, ref('group_fleet_manager')), (4, ref('group_logistics_management'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+    </data>
+</odoo>

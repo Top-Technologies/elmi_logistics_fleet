@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Meter Reading List View -->
+    <record id="view_fleet_meter_reading_tree" model="ir.ui.view">
+        <field name="name">fleet.meter.reading.list</field>
+        <field name="model">fleet.meter.reading</field>
+        <field name="arch" type="xml">
+            <list string="Dual Meter Reading Logs">
+                <field name="reading_date"/>
+                <field name="vehicle_id"/>
+                <field name="meter_type" widget="badge"/>
+                <field name="value" class="fw-bold"/>
+                <field name="source" widget="badge"/>
+                <field name="site_location_id"/>
+                <field name="operator_id"/>
+                <field name="is_override" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Meter Reading Form View -->
+    <record id="view_fleet_meter_reading_form" model="ir.ui.view">
+        <field name="name">fleet.meter.reading.form</field>
+        <field name="model">fleet.meter.reading</field>
+        <field name="arch" type="xml">
+            <form string="Dual Meter Reading Log">
+                <sheet>
+                    <group>
+                        <group string="Reading Metrics">
+                            <field name="vehicle_id"/>
+                            <field name="meter_type" widget="radio"/>
+                            <field name="value"/>
+                            <field name="reading_date"/>
+                        </group>
+                        <group string="Source &amp; Operational Context">
+                            <field name="source"/>
+                            <field name="site_location_id"/>
+                            <field name="operator_id"/>
+                            <field name="task_description"/>
+                        </group>
+                    </group>
+                    <group string="Manager Override (Monotonic Rule Exception)">
+                        <group>
+                            <field name="is_override" widget="boolean_toggle"/>
+                            <field name="override_by_id" invisible="not is_override"/>
+                        </group>
+                        <group>
+                            <field name="override_reason" invisible="not is_override"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fleet_meter_reading" model="ir.actions.act_window">
+        <field name="name">Dual Meter Readings (Hours &amp; KM)</field>
+        <field name="res_model">fleet.meter.reading</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

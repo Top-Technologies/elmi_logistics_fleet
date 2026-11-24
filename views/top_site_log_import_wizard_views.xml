@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Site Log Import Wizard Form View -->
+    <record id="view_top_site_log_import_wizard_form" model="ir.ui.view">
+        <field name="name">top.site.log.import.wizard.form</field>
+        <field name="model">top.site.log.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Weekly Offline Project Site Logs">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Offline Site Log Importer:</strong> Upload standardized weekly Excel/CSV logs sent from remote project camps (Telegram/Email). Rows with unknown asset codes or backward/lower meter readings will be safely caught by the monotonic validation engine.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="site_id" options="{'no_create': True}"/>
+                            <field name="week_ending"/>
+                        </group>
+                        <group>
+                            <field name="meter_type" widget="radio"/>
+                            <field name="import_file" filename="filename"/>
+                            <field name="filename" invisible="1"/>
+                        </group>
+                    </group>
+                    <div invisible="not result_summary" class="mt-3">
+                        <field name="result_summary" readonly="1" class="fw-bold text-primary"/>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_import_site_log" string="Import &amp; Validate Logs" type="object" class="btn-primary" invisible="result_summary"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_top_site_log_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Weekly Site Logs</field>
+        <field name="res_model">top.site.log.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

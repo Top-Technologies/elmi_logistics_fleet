@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Transport Request Sequence -->
+        <record id="seq_top_transport_request" model="ir.sequence">
+            <field name="name">Transport Request</field>
+            <field name="code">top.transport.request</field>
+            <field name="prefix">TR/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Fleet Trip / TWO Sequence -->
+        <record id="seq_top_fleet_trip" model="ir.sequence">
+            <field name="name">Transport Work Order (TWO)</field>
+            <field name="code">top.fleet.trip</field>
+            <field name="prefix">TWO_%(year)s%(month)s%(day)s_</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- MDO Sequence -->
+        <record id="seq_top_machinery_deployment_order" model="ir.sequence">
+            <field name="name">Machinery Deployment Order (MDO)</field>
+            <field name="code">top.machinery.deployment.order</field>
+            <field name="prefix">MDO_%(year)s%(month)s%(day)s_</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Digital Vehicle Handover Sequence -->
+        <record id="seq_fleet_vehicle_handover" model="ir.sequence">
+            <field name="name">Vehicle Handover Record</field>
+            <field name="code">fleet.vehicle.handover</field>
+            <field name="prefix">HND_%(year)s_</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Fuel Log Sequence (Section 30) -->
+        <record id="seq_top_fleet_fuel_log" model="ir.sequence">
+            <field name="name">Fuel Log Transaction</field>
+            <field name="code">top.fleet.fuel.log</field>
+            <field name="prefix">FUEL/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Accident Sequence (Section 34) -->
+        <record id="seq_top_fleet_accident" model="ir.sequence">
+            <field name="name">Accident Record</field>
+            <field name="code">top.fleet.accident</field>
+            <field name="prefix">ACC/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Vehicle Inspection Sequence -->
+        <record id="seq_top_fleet_vehicle_inspection" model="ir.sequence">
+            <field name="name">Vehicle Inspection Record</field>
+            <field name="code">top.fleet.vehicle.inspection</field>
+            <field name="prefix">INSP/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

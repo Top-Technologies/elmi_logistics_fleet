@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Trip List View -->
+    <record id="view_top_fleet_trip_list" model="ir.ui.view">
+        <field name="name">top.fleet.trip.list</field>
+        <field name="model">top.fleet.trip</field>
+        <field name="arch" type="xml">
+            <list string="Transport Work Orders (TWO)" create="false" sample="1">
+                <field name="name" decoration-bf="1"/>
+                <field name="fleet_order_type" widget="badge"
+                       decoration-warning="fleet_order_type == 'heavy'"
+                       decoration-info="fleet_order_type == 'light'"/>
+                <field name="vehicle_id"/>
+                <field name="driver_id" widget="many2one_avatar_user"/>
+                <field name="origin_location_id" optional="show"/>
+                <field name="destination_location_id" optional="show"/>
+                <field name="origin" optional="hide"/>
+                <field name="destination" optional="hide"/>
+                <field name="total_stops_count" string="Stops" optional="show"/>
+                <field name="planned_departure"/>
+                <field name="planned_arrival"/>
+                <field name="actual_distance" sum="Total Actual Distance (km)"/>
+                <field name="actual_duration_display" string="Time Taken" optional="show"/>
+                <field name="start_fuel" optional="hide"/>
+                <field name="end_fuel" optional="hide"/>
+                <field name="total_refueled" optional="hide"/>
+                <field name="actual_fuel" sum="Total Fuel Consumed (L)"/>
+                <field name="fuel_consumption_rate" string="Rate (L/100km)"/>
+                <field name="fuel_consumption_method" optional="show" widget="badge"/>
+                <field name="fuel_theft_suspected" widget="boolean_toggle" optional="show" decoration-danger="fuel_theft_suspected"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state in ('ready', 'dispatched')"
+                       decoration-warning="state == 'in_transit'"
+                       decoration-success="state in ('completed', 'reconciled', 'closed')"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Trip Form View -->
+    <record id="view_top_fleet_trip_form" model="ir.ui.view">
+        <field name="name">top.fleet.trip.form</field>
+        <field name="model">top.fleet.trip</field>
+        <field name="arch" type="xml">
+            <form string="Fleet Trip">
+                <header>
+                    <button name="action_confirm" string="Confirm Trip" type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    
+                    <button name="action_dispatch" string="Dispatch" type="object" class="btn-success"
+                            invisible="state != 'ready'"
+                            groups="elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager"/>
+                    
+                    <button name="action_in_transit" string="Mark In Transit" type="object" class="btn-secondary"
+                            invisible="state != 'dispatched'"
+                            groups="elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager"/>
+                    
+                    <button name="action_add_enroute_stop" string="Add En-Route Stop" type="object" icon="fa-plus-circle" class="btn-success"
+                            invisible="state not in ('dispatched', 'in_transit')"/>
+
+                    <button name="action_open_return_wizard" string="Return Inspection &amp; Complete" type="object" class="btn-primary"
+                            invisible="state != 'in_transit'"
+                            groups="elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_fleet_manager"/>
+
+                    <!-- Section 51: Mobile Fast Actions -->
+                    <button name="action_record_fuel" string="Log Fuel Refill" type="object" icon="fa-tint" class="btn-outline-info"
+                            invisible="state in ('draft', 'cancelled')"/>
+
+                    <button name="action_report_accident" string="Report Incident" type="object" icon="fa-exclamation-triangle" class="btn-outline-danger"
+                            invisible="state in ('draft', 'cancelled')"/>
+                    
+                    <button name="action_reconcile" string="Reconcile" type="object" class="btn-secondary"
+                            invisible="state != 'completed'"
+                            groups="elmi_logistics_fleet.group_fleet_officer,elmi_logistics_fleet.group_logistics_finance,elmi_logistics_fleet.group_fleet_manager"/>
+                    
+                    <button name="action_close" string="Close Trip" type="object" class="btn-success"
+                            invisible="state != 'reconciled'"
+                            groups="elmi_logistics_fleet.group_fleet_manager,elmi_logistics_fleet.group_logistics_admin"/>
+                    
+                    <button name="action_cancel" string="Cancel Trip" type="object" class="btn-secondary"
+                            invisible="state in ('in_transit', 'completed', 'reconciled', 'closed', 'cancelled')"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,ready,dispatched,in_transit,completed,closed"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Cancelled" bg_color="text-bg-secondary" invisible="state != 'cancelled'"/>
+
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" string="Trip Number"/>
+                        <h1>
+                            <field name="name" class="text-primary"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group name="vehicle_driver_group" string="Vehicle &amp; Driver Allocation">
+                            <field name="vehicle_id" readonly="state != 'draft'"
+                                   domain="[('operational_status', 'in', ['available', 'assigned']), ('has_document_expired', '=', False), ('has_inspection_passed', '=', True)]"/>
+                            <field name="vehicle_last_service_date"/>
+                            <field name="vehicle_next_service_date"/>
+                            <field name="vehicle_service_status" widget="badge"
+                                   decoration-danger="vehicle_service_status == 'due'"
+                                   decoration-success="vehicle_service_status == 'ok'"/>
+                            <field name="driver_id" readonly="state != 'draft'"
+                                   domain="['|', ('job_id.name', 'ilike', 'driver'), ('job_title', 'ilike', 'driver')]"/>
+                            <field name="driver_license_expiry_date"/>
+                            <field name="driver_license_compliance" widget="badge"
+                                   decoration-danger="driver_is_license_expired"
+                                   decoration-success="not driver_is_license_expired"/>
+                            <field name="backup_driver_id" readonly="state != 'draft'"
+                                   domain="[('id', '!=', driver_id), '|', ('job_id.name', 'ilike', 'driver'), ('job_title', 'ilike', 'driver')]"/>
+                            <field name="trip_coordinator_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group name="schedule_group" string="Schedule &amp; Classification">
+                            <field name="fleet_order_type" widget="radio" options="{'horizontal': true}" readonly="state != 'draft'"/>
+                            <field name="trip_type_id" readonly="state != 'draft'"/>
+                            <field name="inspection_id" readonly="state != 'draft'"/>
+                            <field name="request_id" readonly="1"/>
+                            <field name="request_ids" widget="many2many_tags" readonly="1" string="Consolidated Orders"/>
+                            <field name="planned_departure" readonly="state != 'draft'"/>
+                            <field name="planned_arrival" readonly="state != 'draft'"/>
+                            <field name="actual_departure" readonly="1"/>
+                            <field name="actual_arrival" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Summary Metrics Cards -->
+                    <div class="row g-2 my-2">
+                        <div class="col-md-4">
+                            <div class="card p-2 bg-light border text-center shadow-sm">
+                                <div class="text-muted small text-uppercase fw-bold"><i class="fa fa-road text-primary me-1"/> Distance Traveled</div>
+                                <div class="fs-4 fw-bold text-primary"><field name="actual_distance"/> km</div>
+                                <div class="small text-muted">Planned: <field name="planned_distance"/> km</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card p-2 bg-light border text-center shadow-sm">
+                                <div class="text-muted small text-uppercase fw-bold"><i class="fa fa-clock-o text-info me-1"/> Total Time Taken</div>
+                                <div class="fs-4 fw-bold text-info"><field name="actual_duration_display"/></div>
+                                <div class="small text-muted">Planned: <field name="planned_duration"/> Hours</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card p-2 bg-light border text-center shadow-sm">
+                                <div class="text-muted small text-uppercase fw-bold"><i class="fa fa-map-marker text-success me-1"/> Stops Visited</div>
+                                <div class="fs-4 fw-bold text-success">
+                                    <field name="completed_stops_count"/> / <field name="total_stops_count"/>
+                                </div>
+                                <div class="small text-muted">Cancelled: <field name="cancelled_stops_count"/> | Pending: <field name="pending_stops_count"/></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <notebook>
+                        <page name="route_page" string="Route and Waypoints">
+                            <group>
+                                <group string="Trip Endpoints">
+                                    <field name="origin_location_id" options="{'no_create_edit': False}" placeholder="Select Predefined Origin..." readonly="state != 'draft'"/>
+                                    <field name="origin" placeholder="Specific origin address..." readonly="state != 'draft'"/>
+                                    <field name="destination_location_id" options="{'no_create_edit': False}" placeholder="Select Predefined Destination..." readonly="state != 'draft'"/>
+                                    <field name="destination" placeholder="Specific destination address..." readonly="state != 'draft'"/>
+                                </group>
+                                <group string="Distance &amp; Duration">
+                                    <label for="planned_distance"/>
+                                    <div class="d-flex align-items-center">
+                                        <field name="planned_distance" class="oe_inline"/>
+                                        <span class="ms-1 me-2">km</span>
+                                        <button name="action_calculate_route_distance" type="object" string="Auto-Calculate" class="btn btn-sm btn-outline-primary py-0" icon="fa-calculator" title="Calculate road distance from Origin, Waypoints, and Destination coordinates"/>
+                                    </div>
+                                    <field name="actual_distance"/>
+                                    <field name="planned_duration"/>
+                                    <field name="actual_duration"/>
+                                    <field name="actual_duration_display"/>
+                                    <field name="vehicle_to_origin_distance" invisible="vehicle_to_origin_distance == 0"/>
+                                </group>
+                            </group>
+                            <separator string="Sub-Trips &amp; Intermediate Stops (Point-to-Point)"/>
+                            <div class="alert alert-info py-2 mb-2 d-flex justify-content-between align-items-center" role="alert">
+                                <div>
+                                    <strong>Sub-Trips Route:</strong> <field name="sub_trips_count" class="fw-bold"/> legs in total journey: <field name="sub_trips_route_display" class="fw-bold text-primary"/>
+                                    <span class="ms-3 badge text-bg-warning" invisible="enroute_distance_added == 0">
+                                        En-Route Distance Added: +<field name="enroute_distance_added"/> km
+                                    </span>
+                                </div>
+                                <button name="action_add_enroute_stop" string="Add En-Route Stop" type="object" class="btn btn-sm btn-primary" icon="fa-plus-circle" invisible="state not in ('dispatched', 'in_transit')"/>
+                            </div>
+                            <field name="waypoint_ids" readonly="state in ('completed', 'reconciled', 'closed', 'cancelled')">
+                                <list editable="bottom" decoration-muted="state == 'pending'" decoration-success="state == 'completed'" decoration-danger="state == 'cancelled'">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="from_location_name" string="From Point" optional="show"/>
+                                    <field name="location_id" options="{'no_create_edit': False}" placeholder="Predefined Location..." optional="hide"/>
+                                    <field name="location_name" string="To Stop / Destination"/>
+                                    <field name="stop_type" widget="badge"/>
+                                    <field name="request_id" optional="show"/>
+                                    <field name="cargo_or_passenger_notes" placeholder="Pick/drop details..."/>
+                                    <field name="estimated_arrival"/>
+                                    <field name="actual_arrival"/>
+                                    <field name="actual_departure"/>
+                                    <field name="travel_time_display" string="Travel Time"/>
+                                    <field name="dwell_time_display" string="Dwell Time" optional="show"/>
+                                    <field name="time_spent_hours" string="Dwell (h)" optional="hide"/>
+                                    <field name="state" widget="badge"
+                                           decoration-muted="state == 'pending'"
+                                           decoration-success="state == 'completed'"
+                                           decoration-danger="state == 'cancelled'"/>
+                                    <field name="notes" optional="show"/>
+                                    <button name="action_mark_completed" string="Mark Visited" type="object" icon="fa-check text-success" invisible="state == 'completed'"/>
+                                    <button name="action_cancel_stop" string="Cancel Stop" type="object" icon="fa-times text-danger" invisible="state in ('completed', 'cancelled')"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page name="reconciliation_page" string="Trip Reconciliation">
+                            <group>
+                                <group string="Planned vs. Actual Comparison">
+                                    <field name="planned_distance"/>
+                                    <field name="actual_distance"/>
+                                    <field name="variance_distance" class="fw-bold" decoration-danger="variance_distance &gt; 20"/>
+                                    <separator string="Duration Comparison"/>
+                                    <field name="planned_duration"/>
+                                    <field name="actual_duration"/>
+                                    <field name="variance_duration" class="fw-bold"/>
+                                </group>
+                                <group string="Fuel Control and Cost KPIs">
+                                    <field name="start_fuel" readonly="state != 'draft'"/>
+                                    <field name="total_refueled"/>
+                                    <field name="gross_fuel" class="fw-bold text-info"/>
+                                    <field name="end_fuel" readonly="state not in ('completed', 'reconciled', 'closed')" invisible="state not in ('completed', 'reconciled', 'closed')"/>
+                                    <field name="current_fuel" invisible="state in ('completed', 'reconciled', 'closed')"/>
+                                    <field name="expected_fuel"/>
+                                    <field name="actual_fuel"/>
+                                    <field name="fuel_consumed_gps" invisible="fuel_consumed_gps == 0"/>
+                                    <field name="fuel_consumed_norm" invisible="fuel_consumed_gps &gt; 0"/>
+                                    <field name="fuel_consumption_method" widget="badge"/>
+                                    <field name="fuel_theft_suspected" widget="boolean_toggle" decoration-danger="fuel_theft_suspected"/>
+                                    <field name="variance_fuel" class="fw-bold" decoration-danger="variance_fuel &gt; 5"/>
+                                    <separator string="Cost &amp; Efficiency"/>
+                                    <field name="fuel_consumption_rate" class="fw-bold text-primary"/>
+                                    <field name="fuel_economy_kml" class="fw-bold text-success"/>
+                                    <field name="total_trip_cost" class="fw-bold fs-5 text-primary"/>
+                                    <field name="consumed_fuel_cost"/>
+                                    <field name="cost_per_km"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page name="fuel_logs_page" string="Fuel Refuels">
+                            <field name="fuel_log_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="fuel_station"/>
+                                    <field name="fuel_type"/>
+                                    <field name="quantity" sum="Total Litres"/>
+                                    <field name="unit_price"/>
+                                    <field name="total_cost" sum="Total Cost"/>
+                                    <field name="payment_method"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page name="events_page" string="GPS Events and Alerts">
+                            <field name="event_ids">
+                                <list decoration-danger="severity == 'danger'" decoration-warning="severity == 'warning'">
+                                    <field name="timestamp"/>
+                                    <field name="name"/>
+                                    <field name="event_type" widget="badge"/>
+                                    <field name="severity" widget="badge"/>
+                                    <field name="speed"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page name="checklist_page" string="Pre-Dispatch Condition Checklist">
+                            <group>
+                                <group string="Mechanical and Fluids">
+                                    <field name="chk_tires" readonly="1"/>
+                                    <field name="chk_engine" readonly="1"/>
+                                    <field name="chk_oil" readonly="1"/>
+                                    <field name="chk_coolant" readonly="1"/>
+                                    <field name="chk_brakes" readonly="1"/>
+                                    <field name="chk_lights" readonly="1"/>
+                                </group>
+                                <group string="Safety Tools and Body">
+                                    <field name="chk_spare_tire" readonly="1"/>
+                                    <field name="chk_tools" readonly="1"/>
+                                    <field name="chk_fire_extinguisher" readonly="1"/>
+                                    <field name="chk_first_aid" readonly="1"/>
+                                    <field name="chk_body_condition" readonly="1"/>
+                                    <field name="chk_gps_online" readonly="1"/>
+                                    <field name="chk_documents_valid" readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="Release Readings">
+                                <group>
+                                    <field name="start_odometer" readonly="1"/>
+                                    <field name="start_fuel" readonly="1"/>
+                                    <field name="start_fuel_level" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="dispatched_by_id"/>
+                                    <field name="dispatch_date"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page name="return_inspection_page" string="Post-Trip Return Inspection" invisible="state not in ('completed', 'reconciled', 'closed')">
+                            <group>
+                                <group string="Mileage &amp; Fuel on Return">
+                                    <field name="vehicle_returned"/>
+                                    <field name="end_odometer"/>
+                                    <field name="end_fuel"/>
+                                    <field name="end_fuel_level"/>
+                                    <field name="return_cleanliness"/>
+                                </group>
+                                <group string="Damage &amp; Defects Audit">
+                                    <field name="has_damage"/>
+                                    <field name="damage_description" invisible="not has_damage"/>
+                                    <field name="accident_id" invisible="not accident_id"/>
+                                    <field name="missing_equipment"/>
+                                    <field name="new_defects"/>
+                                </group>
+                            </group>
+                            <separator string="Driver Debrief &amp; Comments"/>
+                            <field name="driver_comments" readonly="1"/>
+                        </page>
+
+                        <page name="instructions_page" string="Purpose &amp; Instructions">
+                            <group>
+                                <field name="purpose" readonly="state != 'draft'"/>
+                                <field name="special_instructions" readonly="state != 'draft'"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Trip Kanban View -->
+    <record id="view_top_fleet_trip_kanban" model="ir.ui.view">
+        <field name="name">top.fleet.trip.kanban</field>
+        <field name="model">top.fleet.trip</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" quick_create="false" create="false" sample="1">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="vehicle_id"/>
+                <field name="driver_id"/>
+                <field name="origin"/>
+                <field name="destination"/>
+                <field name="planned_departure"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong class="o_kanban_record_title text-primary">
+                                    <field name="name"/>
+                                </strong>
+                                <field name="state" widget="badge"/>
+                            </div>
+                            <div class="small mb-1">
+                                <i class="fa fa-car me-1 text-muted"/> <field name="vehicle_id"/>
+                            </div>
+                            <div class="small mb-1">
+                                <i class="fa fa-user me-1 text-muted"/> <field name="driver_id"/>
+                            </div>
+                            <div class="small mb-2 text-truncate">
+                                <i class="fa fa-map-marker text-danger me-1"/> 
+                                <field name="origin"/> ➔ <field name="destination"/>
+                            </div>
+                            <div class="border-top pt-1 small text-muted">
+                                <i class="fa fa-clock-o me-1"/> <field name="planned_departure"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Trip Calendar View (Section 37) -->
+    <record id="view_top_fleet_trip_calendar" model="ir.ui.view">
+        <field name="name">top.fleet.trip.calendar</field>
+        <field name="model">top.fleet.trip</field>
+        <field name="arch" type="xml">
+            <calendar string="Vehicle Availability and Trip Schedule" date_start="planned_departure" date_stop="planned_arrival" color="vehicle_id" mode="month">
+                <field name="name"/>
+                <field name="vehicle_id"/>
+                <field name="driver_id"/>
+                <field name="origin"/>
+                <field name="destination"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Trip Search View -->
+    <record id="view_top_fleet_trip_search" model="ir.ui.view">
+        <field name="name">top.fleet.trip.search</field>
+        <field name="model">top.fleet.trip</field>
+        <field name="arch" type="xml">
+            <search string="Search Fleet Trips">
+                <field name="name" string="Trip, Origin, or Destination"
+                       filter_domain="['|', '|', ('name', 'ilike', self), ('origin', 'ilike', self), ('destination', 'ilike', self)]"/>
+                <field name="vehicle_id"/>
+                <field name="driver_id"/>
+                <field name="request_id"/>
+
+                <separator/>
+                <filter string="Ready for Dispatch" name="filter_ready" domain="[('state', '=', 'ready')]"/>
+                <filter string="In Transit" name="filter_in_transit" domain="[('state', '=', 'in_transit')]"/>
+                <filter string="Active Trips" name="filter_active" domain="[('state', 'in', ['ready', 'dispatched', 'in_transit'])]"/>
+                <filter string="Completed Trips" name="filter_completed" domain="[('state', 'in', ['completed', 'reconciled', 'closed'])]"/>
+                <separator/>
+                <filter string="Suspected Fuel Loss" name="filter_fuel_theft" domain="[('fuel_theft_suspected', '=', True)]"/>
+                <filter string="High Fuel Variance" name="filter_high_variance" domain="[('variance_fuel', '&gt;', 5)]"/>
+
+                <group>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Vehicle" name="group_by_vehicle" context="{'group_by': 'vehicle_id'}"/>
+                    <filter string="Driver" name="group_by_driver" context="{'group_by': 'driver_id'}"/>
+                    <filter string="Trip Type" name="group_by_trip_type" context="{'group_by': 'trip_type_id'}"/>
+                    <filter string="Fuel Measurement" name="group_by_fuel_method" context="{'group_by': 'fuel_consumption_method'}"/>
+                    <filter string="Planned Month" name="group_by_month" context="{'group_by': 'planned_departure:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Actions -->
+    <record id="action_top_fleet_trip_all" model="ir.actions.act_window">
+        <field name="name">Transport Work Orders (TWO)</field>
+        <field name="res_model">top.fleet.trip</field>
+        <field name="view_mode">list,kanban,calendar,form</field>
+        <field name="search_view_id" ref="view_top_fleet_trip_search"/>
+        <field name="domain">[('request_id', '!=', False)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No active Transport Work Orders!
+            </p>
+            <p>
+                Transport Work Orders (TWO) are generated automatically from approved Transport Requests upon vehicle &amp; driver assignment.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_top_fleet_trip_active" model="ir.actions.act_window">
+        <field name="name">Active Trips</field>
+        <field name="res_model">top.fleet.trip</field>
+        <field name="view_mode">list,kanban,calendar,form</field>
+        <field name="domain">[('state', 'in', ['ready', 'dispatched', 'in_transit'])]</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
+    </record>
+
+    <record id="action_top_fleet_trip_completed" model="ir.actions.act_window">
+        <field name="name">Completed Trips</field>
+        <field name="res_model">top.fleet.trip</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('state', 'in', ['completed', 'reconciled', 'closed'])]</field>
+    </record>
+
+    <!-- Section 37: Vehicle Availability Calendar Action -->
+    <record id="action_top_vehicle_availability_calendar" model="ir.actions.act_window">
+        <field name="name">Vehicle Availability Calendar</field>
+        <field name="res_model">top.fleet.trip</field>
+        <field name="view_mode">calendar,kanban,list</field>
+        <field name="view_id" ref="view_top_fleet_trip_calendar"/>
+    </record>
+
+    <!-- Sections 31 & 32: Fuel Consumption & Telematics Efficiency Action -->
+    <record id="action_top_fleet_fuel_efficiency" model="ir.actions.act_window">
+        <field name="name">Fuel Consumption &amp; Efficiency</field>
+        <field name="res_model">top.fleet.trip</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['in_transit', 'completed', 'reconciled', 'closed'])]</field>
+        <field name="context">{'search_default_group_by_vehicle': 1}</field>
+        <field name="search_view_id" ref="view_top_fleet_trip_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No trips tracked for fuel efficiency yet!
+            </p>
+            <p>
+                Track live and completed trips with real-time GPS tank levels, refuels, and benchmark consumption rates.
+            </p>
+        </field>
+    </record>
+</odoo>

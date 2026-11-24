@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Trip Execution Sheet Report Action -->
+    <record id="action_report_trip_execution" model="ir.actions.report">
+        <field name="name">Trip Execution Sheet &amp; Waybill</field>
+        <field name="model">top.fleet.trip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">elmi_logistics_fleet.report_trip_execution_template</field>
+        <field name="report_file">elmi_logistics_fleet.report_trip_execution_template</field>
+        <field name="print_report_name">'Trip - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_top_fleet_trip"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Transport Request Waybill Action -->
+    <record id="action_report_transport_request_waybill" model="ir.actions.report">
+        <field name="name">Transport Request Form</field>
+        <field name="model">top.transport.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">elmi_logistics_fleet.report_transport_request_template</field>
+        <field name="report_file">elmi_logistics_fleet.report_transport_request_template</field>
+        <field name="print_report_name">'Transport_Request - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_top_transport_request"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb Template -->
+    <template id="report_trip_execution_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                            <div>
+                                <h2 class="mb-0 text-primary">Trip Execution Sheet &amp; Waybill</h2>
+                                <h4 class="text-muted">
+                                    <span t-field="doc.name"/>
+                                    <span t-if="doc.fleet_order_type == 'heavy'" class="badge text-bg-warning ms-2">HEAVY FLEET</span>
+                                    <span t-else="" class="badge text-bg-info ms-2">LIGHT FLEET</span>
+                                </h4>
+                            </div>
+                            <div class="text-end">
+                                <strong>Date: </strong><span t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')"/><br/>
+                                <strong>Status: </strong><span t-field="doc.state"/><br/>
+                                <span t-if="doc.request_id"><strong>Order Ref: </strong><span t-field="doc.request_id.name"/></span>
+                            </div>
+                        </div>
+
+                        <!-- Route & Assignment Overview -->
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="card p-2 h-100">
+                                    <h6 class="text-secondary border-bottom pb-1">Route &amp; Assignment</h6>
+                                    <div><strong>Origin: </strong><span t-field="doc.origin"/></div>
+                                    <div><strong>Destination: </strong><span t-field="doc.destination"/></div>
+                                    <div class="mt-2 pt-1 border-top">
+                                        <strong>Vehicle: </strong><span t-field="doc.vehicle_id.name"/><br/>
+                                        <small class="text-muted">
+                                            Last Service: <span t-field="doc.vehicle_last_service_date"/> | 
+                                            Next Due: <span t-field="doc.vehicle_next_service_date"/> 
+                                            (<span t-field="doc.vehicle_service_status"/>)
+                                        </small>
+                                    </div>
+                                    <div class="mt-1 pt-1 border-top">
+                                        <strong>Primary Driver: </strong><span t-field="doc.driver_id.name"/><br/>
+                                        <small class="text-muted">
+                                            License Category: <span t-field="doc.driver_id.license_category"/> | 
+                                            Expires: <span t-field="doc.driver_license_expiry_date"/> 
+                                            (<span t-field="doc.driver_license_compliance"/>)
+                                        </small>
+                                    </div>
+                                    <div t-if="doc.inspection_id" class="mt-1 pt-1 border-top">
+                                        <strong>Pre-Trip Inspection: </strong>
+                                        <span t-field="doc.inspection_id.name"/> (Result: <span t-field="doc.inspection_id.result"/>)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card p-2 h-100">
+                                    <h6 class="text-secondary border-bottom pb-1">Schedule &amp; Metrics Summary</h6>
+                                    <div><strong>Planned Departure: </strong><span t-field="doc.planned_departure"/></div>
+                                    <div><strong>Planned Arrival: </strong><span t-field="doc.planned_arrival"/></div>
+                                    <div><strong>Actual Departure: </strong><span t-field="doc.actual_departure"/></div>
+                                    <div><strong>Actual Arrival: </strong><span t-field="doc.actual_arrival"/></div>
+                                    <div class="mt-2 pt-1 border-top">
+                                        <strong>Total Distance: </strong><span t-field="doc.actual_distance"/> km 
+                                        <span class="text-muted small">(Planned: <span t-field="doc.planned_distance"/> km)</span>
+                                    </div>
+                                    <div>
+                                        <strong>Total Time Taken: </strong><span t-field="doc.actual_duration_display"/>
+                                        <span class="text-muted small">(<span t-field="doc.actual_duration"/> hrs)</span>
+                                    </div>
+                                    <div>
+                                        <strong>Stops: </strong><span t-field="doc.completed_stops_count"/> Visited / <span t-field="doc.total_stops_count"/> Planned
+                                        <span t-if="doc.cancelled_stops_count &gt; 0" class="text-danger small">(<span t-field="doc.cancelled_stops_count"/> Cancelled)</span>
+                                    </div>
+                                    <div><strong>Starting Odometer: </strong><span t-field="doc.start_odometer"/> km | <strong>Ending: </strong><span t-field="doc.end_odometer"/> km</div>
+                                    <div><strong>Fuel Consumed: </strong><span t-field="doc.actual_fuel"/> L (<span t-field="doc.fuel_consumption_rate"/> L/100km)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Intermediate Waypoints / Multi-Stop Table -->
+                        <div t-if="doc.waypoint_ids" class="mb-3">
+                            <h6 class="text-secondary border-bottom pb-1">Intermediate Waypoints, Stops &amp; Consolidation</h6>
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr class="table-light">
+                                        <th style="width: 8%;">Order</th>
+                                        <th style="width: 25%;">Location</th>
+                                        <th style="width: 15%;">Purpose</th>
+                                        <th style="width: 15%;">Est. Arrival</th>
+                                        <th style="width: 15%;">Act. Arrival</th>
+                                        <th style="width: 12%;">Status</th>
+                                        <th style="width: 10%;">Dwell</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="doc.waypoint_ids" t-as="wp">
+                                        <td><span t-field="wp.sequence"/></td>
+                                        <td>
+                                            <span t-field="wp.location_name"/><br/>
+                                            <small t-if="wp.cargo_or_passenger_notes" class="text-muted"><span t-field="wp.cargo_or_passenger_notes"/></small>
+                                        </td>
+                                        <td><span t-field="wp.stop_type"/></td>
+                                        <td><span t-field="wp.estimated_arrival"/></td>
+                                        <td><span t-field="wp.actual_arrival"/></td>
+                                        <td>
+                                            <span t-if="wp.state == 'completed'" class="badge text-bg-success">Visited</span>
+                                            <span t-elif="wp.state == 'cancelled'" class="badge text-bg-danger">Cancelled</span>
+                                            <span t-else="" class="badge text-bg-secondary">Pending</span>
+                                        </td>
+                                        <td><span t-field="wp.time_spent_hours"/> h</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Section 29 Reconciliation Summary -->
+                        <div class="mb-3">
+                            <h6 class="text-secondary border-bottom pb-1">Trip Performance &amp; Reconciliation</h6>
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr class="table-light">
+                                        <th>Metric</th>
+                                        <th>Planned</th>
+                                        <th>Actual</th>
+                                        <th>Variance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Distance (km)</strong></td>
+                                        <td><span t-field="doc.planned_distance"/></td>
+                                        <td><span t-field="doc.actual_distance"/></td>
+                                        <td><span t-field="doc.variance_distance"/> km</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Duration (Hours)</strong></td>
+                                        <td><span t-field="doc.planned_duration"/></td>
+                                        <td><span t-field="doc.actual_duration"/></td>
+                                        <td><span t-field="doc.variance_duration"/> hrs</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Fuel (Litres)</strong></td>
+                                        <td><span t-field="doc.expected_fuel"/> L</td>
+                                        <td><span t-field="doc.actual_fuel"/> L <span class="text-muted small">(Refueled: <span t-field="doc.total_refueled"/> L)</span></td>
+                                        <td><span t-field="doc.variance_fuel"/> L</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Signatures & Authorization -->
+                        <div class="row mt-4 pt-4 border-top">
+                            <div class="col-3 text-center">
+                                _______________________<br/>
+                                <strong>Fleet Officer</strong>
+                            </div>
+                            <div class="col-3 text-center">
+                                _______________________<br/>
+                                <strong>Fleet Supervisor</strong>
+                            </div>
+                            <div class="col-3 text-center">
+                                _______________________<br/>
+                                <strong>Driver Signature</strong>
+                            </div>
+                            <div class="col-3 text-center">
+                                _______________________<br/>
+                                <strong>Department Requester</strong>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Template for Transport Request Form (Customized to match company template) -->
+    <template id="report_transport_request_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.basic_layout">
+                    <div class="page" style="font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #000; padding: 5px;">
+                        <style>
+                            .tr-doc-box {
+                                width: 100%;
+                                border: 2px solid #000;
+                                border-collapse: collapse;
+                            }
+                            .tr-doc-box td, .tr-doc-box th {
+                                border: 1px solid #000;
+                                padding: 3px 6px;
+                                vertical-align: middle;
+                            }
+                            .tr-val-blue {
+                                color: #0b3954;
+                                font-weight: bold;
+                            }
+                            .tr-val-red {
+                                color: #c00000;
+                                font-weight: bold;
+                            }
+                            .tr-head-title {
+                                font-size: 16px;
+                                font-weight: bold;
+                                text-align: center;
+                                letter-spacing: 0.5px;
+                            }
+                            .tr-section-banner {
+                                font-size: 11px;
+                                font-weight: bold;
+                                text-align: center;
+                                background-color: #f7f7f7;
+                                padding: 4px;
+                            }
+                            .tr-grid-th {
+                                font-size: 10px;
+                                font-weight: bold;
+                                text-align: center;
+                                background-color: #f5f5f5;
+                            }
+                        </style>
+
+                        <!-- Header & Document Metadata -->
+                        <table class="tr-doc-box" style="margin-bottom: 0;">
+                            <!-- Row 1: Logo, Company Name, Main Title -->
+                            <tr>
+                                <td style="width: 25%; height: 50px; vertical-align: top; border-bottom: 1px solid #000; border-right: 1px solid #000;">
+                                    <div style="font-size: 8px; color: #666;">Company Logo:</div>
+                                    <div style="text-align: center; margin-top: 2px;">
+                                        <img t-if="doc.company_id.logo" t-att-src="image_data_uri(doc.company_id.logo)" style="max-height: 38px; max-width: 100px;"/>
+                                    </div>
+                                    <div style="margin-top: 3px; font-weight: bold; font-size: 10px;">
+                                        Company Name: <span class="tr-val-blue" t-field="doc.company_id.name"/>
+                                    </div>
+                                </td>
+                                <td colspan="3" class="tr-head-title" style="vertical-align: middle; border-bottom: 1px solid #000;">
+                                    <span t-esc="doc.document_title or 'Transport Request Form'"/>
+                                </td>
+                            </tr>
+
+                            <!-- Row 2: Doc Title, Doc No, Issue No, Page No -->
+                            <tr style="font-size: 10px;">
+                                <td style="width: 30%;">
+                                    <strong>Document Title:</strong> <span t-esc="doc.document_title or 'Transport Request Form'"/>
+                                </td>
+                                <td style="width: 28%;">
+                                    <strong>Document No:</strong> <span t-esc="doc.document_no or 'DOC-TR-001'"/>
+                                </td>
+                                <td style="width: 21%;">
+                                    <strong>Issue No.</strong> <span t-esc="doc.issue_no or '01'"/>
+                                </td>
+                                <td style="width: 21%;">
+                                    <strong>Page No.</strong> <span t-esc="doc.page_no or '1 of 1'"/>
+                                </td>
+                            </tr>
+
+                            <!-- Row 3: Request by (Dept/Project) & Date -->
+                            <tr>
+                                <td colspan="2" style="border-right: 1px solid #000;">
+                                    <strong>Transport Request by (Department/Project):</strong> 
+                                    <span class="tr-val-blue" t-esc="doc.department_or_project or (doc.department_id.name if doc.department_id else '')"/>
+                                </td>
+                                <td colspan="2">
+                                    <strong>Date:</strong> 
+                                    <span class="tr-val-blue" t-esc="doc.request_date.strftime('%d/%m/%Y') if doc.request_date else ''"/>
+                                </td>
+                            </tr>
+
+                            <!-- Row 4: Requester Name & Transport Request No (Red) -->
+                            <tr>
+                                <td colspan="2" style="border-right: 1px solid #000;">
+                                    <strong>Requester Name:</strong> 
+                                    <span class="tr-val-blue" t-esc="doc.employee_id.name if doc.employee_id else (doc.requester_id.name if doc.requester_id else '')"/>
+                                </td>
+                                <td colspan="2">
+                                    <strong>Transport Request No.</strong> 
+                                    <span class="tr-val-red" t-esc="doc.name"/>
+                                </td>
+                            </tr>
+
+                            <!-- Row 5: Requester Position & Reference Work Order No (Red) -->
+                            <tr>
+                                <td colspan="2" style="border-right: 1px solid #000;">
+                                    <strong>Requester Position:</strong> 
+                                    <span class="tr-val-blue" t-esc="doc.requester_position or (doc.employee_id.job_title if doc.employee_id and doc.employee_id.job_title else '')"/>
+                                </td>
+                                <td colspan="2">
+                                    <strong>Reference Work Order No.</strong> 
+                                    <span class="tr-val-red" t-esc="doc.reference_work_order_no or ''"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Origin & Destination Addresses (Side by Side) -->
+                        <table class="tr-doc-box" style="border-top: none; margin-bottom: 0;">
+                            <tr style="background-color: #f2f2f2;">
+                                <th colspan="2" style="width: 50%; text-align: center; font-weight: bold; border-right: 1px solid #000;">
+                                    Origin (Pick up Address):
+                                </th>
+                                <th colspan="2" style="width: 50%; text-align: center; font-weight: bold;">
+                                    Destination (Drop off Address):
+                                </th>
+                            </tr>
+                            <tr>
+                                <td style="width: 14%; font-weight: bold;">Description</td>
+                                <td style="width: 36%; border-right: 1px solid #000;">
+                                    <span class="tr-val-blue" t-esc="doc.origin_description or doc.origin or (doc.origin_location_id.name if doc.origin_location_id else '')"/>
+                                </td>
+                                <td style="width: 14%; font-weight: bold;">Description</td>
+                                <td style="width: 36%;">
+                                    <span class="tr-val-blue" t-esc="doc.destination_description or doc.destination or (doc.destination_location_id.name if doc.destination_location_id else '')"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold;">State</td>
+                                <td style="border-right: 1px solid #000;">
+                                    <span class="tr-val-blue" t-esc="doc.origin_state or 'ADDIS ABABA'"/>
+                                </td>
+                                <td style="font-weight: bold;">State</td>
+                                <td>
+                                    <span class="tr-val-blue" t-esc="doc.destination_state or 'ADDIS ABABA'"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold;">City</td>
+                                <td style="border-right: 1px solid #000;">
+                                    <span class="tr-val-blue" t-esc="doc.origin_city or 'ADDIS ABABA'"/>
+                                </td>
+                                <td style="font-weight: bold;">City</td>
+                                <td>
+                                    <span class="tr-val-blue" t-esc="doc.destination_city or 'ADDIS ABABA'"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold;">KK</td>
+                                <td style="border-right: 1px solid #000;">
+                                    <span class="tr-val-blue" t-esc="doc.origin_subcity or ''"/>
+                                </td>
+                                <td style="font-weight: bold;">Kebele</td>
+                                <td>
+                                    <span class="tr-val-blue" t-esc="doc.destination_subcity or ''"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold;">Woreda</td>
+                                <td style="border-right: 1px solid #000;">
+                                    <span class="tr-val-blue" t-esc="doc.origin_woreda or ''"/>
+                                </td>
+                                <td style="font-weight: bold;">Woreda</td>
+                                <td>
+                                    <span class="tr-val-blue" t-esc="doc.destination_woreda or ''"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Type of Goods to be Transported Banner -->
+                        <table class="tr-doc-box" style="border-top: none; margin-bottom: 0;">
+                            <tr>
+                                <td class="tr-section-banner">
+                                    Type of Goods to be Transported
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Dual Tables: Machinery / Vehicle & Goods -->
+                        <table class="tr-doc-box" style="border-top: none; margin-bottom: 0;">
+                            <thead>
+                                <tr style="background-color: #f2f2f2;">
+                                    <th colspan="4" style="width: 50%; text-align: center; font-weight: bold; border-right: 1px solid #000;">
+                                        Machinery/Vehicle
+                                    </th>
+                                    <th colspan="4" style="width: 50%; text-align: center; font-weight: bold;">
+                                        Goods
+                                    </th>
+                                </tr>
+                                <tr class="tr-grid-th">
+                                    <!-- Machinery Columns -->
+                                    <th style="width: 5%;">No.</th>
+                                    <th style="width: 22%;">Machine/Vehicle Description</th>
+                                    <th style="width: 10%;">Plate No.</th>
+                                    <th style="width: 13%; border-right: 1px solid #000;">Reason</th>
+                                    <!-- Goods Columns -->
+                                    <th style="width: 5%;">No.</th>
+                                    <th style="width: 22%;">Description</th>
+                                    <th style="width: 10%;">Unit</th>
+                                    <th style="width: 13%;">Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-set="mach_lines" t-value="doc.machinery_line_ids"/>
+                                <t t-set="good_lines" t-value="doc.goods_line_ids"/>
+                                <t t-set="row_count" t-value="max(len(mach_lines), len(good_lines), 14)"/>
+
+                                <t t-foreach="range(row_count)" t-as="i">
+                                    <tr style="height: 20px;">
+                                        <!-- Machinery Line Cells -->
+                                        <t t-if="i &lt; len(mach_lines)">
+                                            <td style="text-align: center;" class="tr-val-blue"><span t-esc="mach_lines[i].line_no or (i + 1)"/></td>
+                                            <td class="tr-val-blue"><span t-esc="mach_lines[i].description"/></td>
+                                            <td style="text-align: center;" class="tr-val-blue"><span t-esc="mach_lines[i].plate_no or ''"/></td>
+                                            <td style="border-right: 1px solid #000;" class="tr-val-blue"><span t-esc="mach_lines[i].reason or ''"/></td>
+                                        </t>
+                                        <t t-else="">
+                                            <td>&amp;nbsp;</td>
+                                            <td>&amp;nbsp;</td>
+                                            <td>&amp;nbsp;</td>
+                                            <td style="border-right: 1px solid #000;">&amp;nbsp;</td>
+                                        </t>
+
+                                        <!-- Goods Line Cells -->
+                                        <t t-if="i &lt; len(good_lines)">
+                                            <td style="text-align: center;" class="tr-val-blue"><span t-esc="good_lines[i].line_no or (i + 1)"/></td>
+                                            <td class="tr-val-blue"><span t-esc="good_lines[i].description"/></td>
+                                            <td style="text-align: center;" class="tr-val-blue"><span t-esc="good_lines[i].unit or ''"/></td>
+                                            <td style="text-align: right;" class="tr-val-blue"><span t-esc="good_lines[i].quantity"/></td>
+                                        </t>
+                                        <t t-else="">
+                                            <td>&amp;nbsp;</td>
+                                            <td>&amp;nbsp;</td>
+                                            <td>&amp;nbsp;</td>
+                                            <td>&amp;nbsp;</td>
+                                        </t>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <!-- Footer: Delivery Date, Authorizer, Signatures -->
+                        <table class="tr-doc-box" style="border-top: none; margin-bottom: 0;">
+                            <tr>
+                                <!-- Left Column: Goods to be Delivered & Authorizer Name -->
+                                <td style="width: 50%; vertical-align: top; border-right: 1px solid #000; padding: 0;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr style="height: 38px;">
+                                            <td style="width: 45%; font-weight: bold; border: none; border-bottom: 1px solid #000; padding: 6px;">
+                                                Required Date:
+                                            </td>
+                                            <td style="width: 55%; border: none; border-bottom: 1px solid #000; padding: 6px;">
+                                                <span class="tr-val-blue" t-esc="doc.required_date.strftime('%d/%m/%Y %H:%M') if doc.required_date else ''"/>
+                                            </td>
+                                        </tr>
+                                        <tr style="height: 38px;">
+                                            <td style="font-weight: bold; border: none; padding: 6px;">
+                                                Authorizer Name:
+                                            </td>
+                                            <td style="border: none; padding: 6px;">
+                                                <span class="tr-val-blue" t-esc="doc.authorizer_name or (doc.approved_by_id.name if doc.approved_by_id else '')"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+
+                                <!-- Right Column: Requester & Authorizer Signatures -->
+                                <td style="width: 50%; vertical-align: top; padding: 0;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr style="height: 38px;">
+                                            <td style="width: 40%; font-weight: bold; border: none; border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 6px; vertical-align: top;">
+                                                Requester Signature:
+                                            </td>
+                                            <td style="width: 60%; border: none; border-bottom: 1px solid #000; padding: 2px 6px; text-align: center; vertical-align: middle;">
+                                                <img t-if="doc.requester_signature" t-att-src="image_data_uri(doc.requester_signature)" style="max-height: 32px; max-width: 150px;"/>
+                                                <span t-else="" style="color: #bbb; font-size: 8px;">&amp;nbsp;</span>
+                                            </td>
+                                        </tr>
+                                        <tr style="height: 38px;">
+                                            <td style="font-weight: bold; border: none; border-right: 1px solid #000; padding: 6px; vertical-align: top;">
+                                                Authorizer Signature:
+                                            </td>
+                                            <td style="border: none; padding: 2px 6px; text-align: center; vertical-align: middle;">
+                                                <img t-if="doc.authorizer_signature" t-att-src="image_data_uri(doc.authorizer_signature)" style="max-height: 32px; max-width: 150px;"/>
+                                                <span t-else="" style="color: #bbb; font-size: 8px;">&amp;nbsp;</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
